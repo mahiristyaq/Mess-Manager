@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "MessData": {
+      "title": "Mess Data Document",
+      "description": "Represents the full state of a shared mess including members, configuration, meals, and transactions",
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "number",
+          "description": "Schema version number"
+        },
+        "revision": {
+          "type": "number",
+          "description": "Revision number for sync concurrency"
+        },
+        "syncId": {
+          "type": "string",
+          "description": "Unique sync identifier"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Timestamp of last modification"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Client instance ID that updated the record"
+        },
+        "members": {
+          "type": "array",
+          "description": "List of active mess member names"
+        },
+        "config": {
+          "type": "object",
+          "description": "Mess configuration such as name, month, fixed costs, and admin password hash"
+        },
+        "meals": {
+          "type": "object",
+          "description": "Daily meal counts indexed by date string YYYY-MM-DD"
+        },
+        "transactions": {
+          "type": "array",
+          "description": "Chronological records of money deposits and market expenses"
+        }
+      },
+      "required": ["version", "config", "members"]
+    }
+  },
+  "firestore": {
+    "/messes_v3/{messKey}/data/main": {
+      "schema": "MessData",
+      "description": "Main state document for a shared mess identified by encoded key"
+    }
+  }
+}

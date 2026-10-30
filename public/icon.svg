@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="plateGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background with rounded squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Subtle glow ring -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4"/>
+
+  <!-- Central Emblem Container -->
+  <g filter="url(#shadow)">
+    <!-- Plate / Ledger Ring -->
+    <circle cx="256" cy="256" r="140" fill="#091421" stroke="url(#goldGrad)" stroke-width="12"/>
+
+    <!-- Fork & Knife / Utensils & Book icon -->
+    <!-- Open Book / Ledger base -->
+    <path d="M160 300c30-15 65-15 96 0 31-15 66-15 96 0v-90c-30-15-65-15-96 0-31-15-66-15-96 0v90z" fill="none" stroke="#38bdf8" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="256" y1="210" x2="256" y2="300" stroke="#38bdf8" stroke-width="14" stroke-linecap="round"/>
+
+    <!-- Taka Symbol / Coin in upper center -->
+    <circle cx="256" cy="180" r="32" fill="#059669" stroke="#34d399" stroke-width="8"/>
+    <text x="256" y="193" font-family="'Noto Sans Bengali', sans-serif" font-size="34" font-weight="900" fill="#ffffff" text-anchor="middle">৳</text>
+  </g>
+</svg>

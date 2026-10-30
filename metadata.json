@@ -1,0 +1,6 @@
+{
+  "name": "Mess Manager Premium",
+  "description": "Smart, comprehensive meal and expense management portal for bachelor messes and shared living with real-time cloud sync, meal counters, expense split, and settlement reports.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
