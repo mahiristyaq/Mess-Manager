@@ -16,6 +16,7 @@ import {
   bnMonths,
   sanitizeTransactionInput,
   isMonthEditable,
+  getActiveMembersForMonth,
 } from '../utils/helpers';
 import {
   restGetDoc,
@@ -896,14 +897,16 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const quickSetMeals = useCallback((date: string, count: number) => {
     if (!checkEditPermission(date)) return;
     const safeCount = Math.max(0, count);
+    const targetMonth = date.slice(0, 7);
+    const monthMembers = getActiveMembersForMonth(dataRef.current, targetMonth);
     if (messCode) {
       let totalMealsDelta = 0;
-      dataRef.current?.members.forEach(m => {
+      monthMembers.forEach(m => {
         const oldVal = Number(dataRef.current?.meals?.[date]?.[m.name]?.count || 0);
         totalMealsDelta += (safeCount - oldVal);
       });
       if (totalMealsDelta !== 0) {
-        updateRunningSummaryAtomic(messCode, date.slice(0, 7), {
+        updateRunningSummaryAtomic(messCode, targetMonth, {
           mealsDelta: totalMealsDelta,
         });
       }
@@ -912,7 +915,8 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
     saveAndSync(prev => {
       const nextMeals = { ...prev.meals };
       nextMeals[date] = {};
-      prev.members.forEach(m => {
+      const prevMonthMembers = getActiveMembersForMonth(prev, targetMonth);
+      prevMonthMembers.forEach(m => {
         nextMeals[date][m.name] = { count: safeCount };
       });
       return { ...prev, meals: nextMeals };
@@ -1023,7 +1027,8 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const prevTotals = calculateTotals(prev, prevMonth);
       const newTransactions = [...prev.transactions];
 
-      prev.members.forEach(memberObj => {
+      const prevMonthMembers = getActiveMembersForMonth(prev, prevMonth);
+      prevMonthMembers.forEach(memberObj => {
         const bal = calculateMemberBalance(prev, memberObj.name, prevTotals, prevMonth).balance;
         
         if (Math.abs(bal) >= 0.01) {

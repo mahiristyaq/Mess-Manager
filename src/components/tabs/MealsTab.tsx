@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMess } from '../../context/MessContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { today, mealsForMember } from '../../utils/helpers';
+import { today, mealsForMember, getActiveMembersForMonth } from '../../utils/helpers';
 import {
   Utensils,
   ChevronLeft,
@@ -149,7 +149,7 @@ export const MealsTab: React.FC = () => {
 
         {/* Member Meal Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {data.members.map((memberObj, index) => {
+          {getActiveMembersForMonth(data, (selectedDate || today()).slice(0, 7)).map((memberObj, index) => {
             const member = memberObj.name;
             const count = Number(dayMeals[member]?.count) || 0;
             const selectedMonth = (selectedDate || today()).slice(0, 7);
