@@ -220,6 +220,16 @@ const bn = {
     confirmResetMonth: 'এই মাসের সকল ডেটা মুছে যাবে। আপনি কি নিশ্চিত?',
     monthResetDone: 'মাসের হিসাব রিসেট সম্পন্ন',
     settingsSavedDone: 'সেটিংস সেভ হয়েছে',
+    removeMemberModalTitle: 'সদস্য রিমুভ অপশন',
+    removeMemberModalSub: (name: string) => `${name}-কে কিভাবে রিমুভ করতে চান?`,
+    removeFromNextMonthOption: (month: string) => `পরবর্তী মাস (${month}) থেকে বাদ দিন`,
+    removeFromNextMonthHelp: 'বর্তমান মাস ও আগের সব মাসের শিট, মিল ও হিসাব ১০০% সুরক্ষিত থাকবে। শুধু পরবর্তী মাস থেকে তিনি আর শিটে থাকবেন না। (সুপারিশকৃত)',
+    removeFromThisMonthOption: 'তালিকা থেকে সম্পূর্ণ ডিলিট',
+    removeFromThisMonthHelp: 'সদস্য তালিকা থেকে সরাসরি মুছে ফেলা হবে।',
+    memberLeavingBadge: (month: string) => `${month} থেকে মেস ছেড়েছেন`,
+    keepActiveMemberBtn: 'সক্রিয় রাখুন',
+    memberLeavingScheduled: (name: string, month: string) => `${name}-কে ${month} থেকে বাদ দেওয়া হয়েছে`,
+    memberRestoredActive: (name: string) => `${name}-কে পুনরায় সক্রিয় রাখা হয়েছে`,
 
     // Modals - Admin Gate
     adminGateSetupTitle: 'পাসওয়ার্ড সেট করুন',
@@ -525,6 +535,16 @@ const en: TranslationSchema = {
     confirmResetMonth: 'Delete all records for this month? Are you sure?',
     monthResetDone: 'Ledger reset',
     settingsSavedDone: 'Settings saved',
+    removeMemberModalTitle: 'Member Removal Options',
+    removeMemberModalSub: (name: string) => `How would you like to remove ${name}?`,
+    removeFromNextMonthOption: (month: string) => `Exclude starting Next Month (${month})`,
+    removeFromNextMonthHelp: 'Current month and past months data, meals, and balance remain 100% intact. The member will not appear in sheets starting next month. (Recommended)',
+    removeFromThisMonthOption: 'Delete from Roster Completely',
+    removeFromThisMonthHelp: 'Remove immediately from the active mess members list.',
+    memberLeavingBadge: (month: string) => `Leaving from ${month}`,
+    keepActiveMemberBtn: 'Keep Active',
+    memberLeavingScheduled: (name: string, month: string) => `${name} will be excluded starting from ${month}`,
+    memberRestoredActive: (name: string) => `${name} is restored to active status`,
 
     // Modals - Admin Gate
     adminGateSetupTitle: 'Set Password',

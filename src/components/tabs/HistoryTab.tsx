@@ -2,13 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { useMess } from '../../context/MessContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { TransactionItem } from '../TransactionItem';
-import { exportTransactionsToCSV, downloadBlob } from '../../utils/helpers';
+import { exportTransactionsToCSV, downloadBlob, getActiveMembersForMonth } from '../../utils/helpers';
 import { History, Download, ChevronDown, Users } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
 export const HistoryTab: React.FC = () => {
-  const { data, totals, showToast } = useMess();
+  const { data, totals, activeMonth, showToast } = useMess();
   const { t, formatNumber, language, currency } = useLanguage();
   const [selectedMember, setSelectedMember] = useState<string>('all');
   const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
@@ -66,7 +66,7 @@ export const HistoryTab: React.FC = () => {
               aria-label={t.allMembers}
             >
               <option value="all">{t.allMembers}</option>
-              {data.members.map(m => (
+              {getActiveMembersForMonth(data, activeMonth).map(m => (
                 <option key={m.name} value={m.name}>
                   {m.name}
                 </option>

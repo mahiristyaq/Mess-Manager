@@ -23,6 +23,8 @@ export interface MessConfig {
 
 export interface Member {
   name: string;
+  leftMonth?: string;
+  joinedMonth?: string;
 }
 
 export interface MessData {

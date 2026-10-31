@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMess } from '../../context/MessContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { today, currentMonth } from '../../utils/helpers';
+import { today, currentMonth, getActiveMembersForMonth } from '../../utils/helpers';
 import { X, Calendar, User, ShoppingBag, Coins, Check } from 'lucide-react';
 
 export const EntryModal: React.FC = () => {
@@ -56,7 +56,8 @@ export const EntryModal: React.FC = () => {
       setDate(defaultDate);
       setAmount('');
       setNote('');
-      setMember(data.members[0]?.name || '');
+      const curMonthMems = getActiveMembersForMonth(data, defaultDate.slice(0, 7));
+      setMember(curMonthMems[0]?.name || data.members[0]?.name || '');
       setHasDraftRestored(false);
     }
   }, [isEntryModalOpen, editId, data.transactions, data.members, activeMonth]);
@@ -177,11 +178,18 @@ export const EntryModal: React.FC = () => {
               className="field text-sm"
               required
             >
-              {data.members.map(m => (
-                <option key={m.name} value={m.name}>
-                  {m.name}
-                </option>
-              ))}
+              {(() => {
+                const monthActiveMems = getActiveMembersForMonth(data, (date || today()).slice(0, 7));
+                const list = [...monthActiveMems];
+                if (member && !list.some(m => m.name.toLowerCase() === member.toLowerCase())) {
+                  list.unshift({ name: member });
+                }
+                return list.map(m => (
+                  <option key={m.name} value={m.name}>
+                    {m.name}
+                  </option>
+                ));
+              })()}
             </select>
           </div>
 

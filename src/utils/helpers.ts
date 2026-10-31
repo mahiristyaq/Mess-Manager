@@ -27,6 +27,28 @@ export function currentMonth(): string {
   return today().slice(0, 7);
 }
 
+export function getNextMonth(monthStr: string): string {
+  const [y, m] = (monthStr || currentMonth()).split('-').map(Number);
+  let nextY = y;
+  let nextM = (m || 1) + 1;
+  if (nextM > 12) {
+    nextM = 1;
+    nextY += 1;
+  }
+  return `${nextY}-${String(nextM).padStart(2, '0')}`;
+}
+
+export function getPreviousMonth(monthStr: string): string {
+  const [y, m] = (monthStr || currentMonth()).split('-').map(Number);
+  let prevY = y;
+  let prevM = (m || 1) - 1;
+  if (prevM < 1) {
+    prevM = 12;
+    prevY -= 1;
+  }
+  return `${prevY}-${String(prevM).padStart(2, '0')}`;
+}
+
 export function toBengaliNumber(num: number | string): string {
   const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
   const s = String(num);
@@ -237,7 +259,11 @@ export function normalizeMessData(raw: Partial<MessData> | null | undefined, fal
   const cleanMembers = Array.isArray(d.members)
     ? d.members.map(m => {
         if (typeof m === 'string') return { name: m };
-        return { name: String(m.name || '').trim() };
+        return {
+          name: String(m.name || '').trim(),
+          leftMonth: m.leftMonth ? String(m.leftMonth).trim() : undefined,
+          joinedMonth: m.joinedMonth ? String(m.joinedMonth).trim() : undefined,
+        };
       }).filter(m => m.name)
     : [];
   d.members = cleanMembers.length ? cleanMembers : base.members;
@@ -294,7 +320,17 @@ export function mealsForMember(data: MessData, member: string, month = data.conf
 }
 
 export function allMeals(data: MessData, month = data.config.month || currentMonth()): number {
-  return data.members.reduce((s, m) => s + mealsForMember(data, m.name, month), 0);
+  let n = 0;
+  if (data.meals && typeof data.meals === 'object') {
+    for (const [date, dayObj] of Object.entries(data.meals)) {
+      if (getTransactionMonth(date) === month && dayObj && typeof dayObj === 'object') {
+        for (const val of Object.values(dayObj)) {
+          n += Number((val as { count?: number })?.count || 0);
+        }
+      }
+    }
+  }
+  return n;
 }
 
 export function getTransactionMonth(dateStr: string): string {
@@ -317,17 +353,33 @@ export function getTransactionMonth(dateStr: string): string {
 
 export function getActiveMembersForMonth(data: MessData, month: string): Member[] {
   const monthMembersMap = new Map<string, Member>();
+
+  // 1. Members in data.members
   (data.members || []).forEach(m => {
-    if (m && m.name) monthMembersMap.set(m.name.trim().toLowerCase(), m);
+    if (!m || !m.name) return;
+    const cleanName = m.name.trim();
+    if (!cleanName) return;
+
+    // If member left starting from a specific month, exclude them from this and future months
+    if (m.leftMonth && month >= m.leftMonth) {
+      return;
+    }
+    // If member joined in a future month, exclude them from past months
+    if (m.joinedMonth && month < m.joinedMonth) {
+      return;
+    }
+    monthMembersMap.set(cleanName.toLowerCase(), m);
   });
 
+  // 2. Also include any member who has recorded meals in this specific month
   if (data.meals && typeof data.meals === 'object') {
     for (const [date, dayObj] of Object.entries(data.meals)) {
       if (getTransactionMonth(date) === month && dayObj && typeof dayObj === 'object') {
-        for (const mName of Object.keys(dayObj)) {
+        for (const [mName, val] of Object.entries(dayObj)) {
+          const count = Number((val as { count?: number })?.count) || 0;
           const cleanName = mName.trim();
           const lower = cleanName.toLowerCase();
-          if (!monthMembersMap.has(lower)) {
+          if (cleanName && count > 0 && !monthMembersMap.has(lower)) {
             monthMembersMap.set(lower, { name: cleanName });
           }
         }
@@ -335,6 +387,7 @@ export function getActiveMembersForMonth(data: MessData, month: string): Member[
     }
   }
 
+  // 3. Also include any member who has recorded transactions in this specific month
   if (Array.isArray(data.transactions)) {
     for (const tx of data.transactions) {
       if (getTransactionMonth(tx.date) === month) {
@@ -376,9 +429,11 @@ export function calculateTotals(data: MessData, targetMonth = data.config.month 
 
   for (const item of tx) {
     const amt = Number(item.amount || 0);
-    const rawPayer = String(item.payer || item.member || data.members[0]?.name || '').trim();
-    const matched = data.members.find(m => m.name.trim().toLowerCase() === rawPayer.toLowerCase());
-    const payer = matched ? matched.name : (data.members[0]?.name || rawPayer);
+    const rawPayer = String(item.payer || item.member || '').trim();
+    const matched = activeMembers.find(m => m.name.trim().toLowerCase() === rawPayer.toLowerCase());
+    const payer = matched ? matched.name : rawPayer;
+
+    if (!payer) continue;
 
     if (item.type === 'deposit') {
       deposits += amt;
@@ -438,7 +493,9 @@ export function calculateMemberBalance(
 
   const ownMeals = mealsForMember(data, cleanMemberName, targetMonth);
   const food = Number((ownMeals * totals.rate).toFixed(2));
-  const fixed = (data.config.fixedCostEnabled ? Number(data.config.fixedCost || 0) : 0) / (data.members.length || 1);
+  const monthActiveMembers = getActiveMembersForMonth(data, targetMonth);
+  const memberCount = monthActiveMembers.length || data.members.length || 1;
+  const fixed = (data.config.fixedCostEnabled ? Number(data.config.fixedCost || 0) : 0) / memberCount;
   const totalCost = Number((food + (data.config.fixedCostEnabled ? fixed : 0)).toFixed(2));
 
   // ব্যালান্স = মোট জমা - মোট খরচ

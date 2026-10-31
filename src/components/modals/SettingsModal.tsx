@@ -3,7 +3,7 @@ import { useMess } from '../../context/MessContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme, ThemeMode } from '../../context/ThemeContext';
 import { MessConfig, Member } from '../../types';
-import { currentMonth, hashPassword } from '../../utils/helpers';
+import { currentMonth, hashPassword, getNextMonth } from '../../utils/helpers';
 import {
   Settings,
   X,
@@ -42,14 +42,15 @@ export const SettingsModal: React.FC = () => {
     showToast,
   } = useMess();
 
-  const { t, language, setLanguage, currency, setCurrency, currencies } = useLanguage();
+  const { t, language, setLanguage, currency, setCurrency, currencies, getMonthLabel } = useLanguage();
   const { theme, setTheme } = useTheme();
 
   const [sMessName, setSMessName] = useState<string>('');
   const [sMonth, setSMonth] = useState<string>('');
   const [sFixedEnabled, setSFixedEnabled] = useState<boolean>(false);
   const [sFixed, setSFixed] = useState<string>('0');
-  const [memberDraft, setMemberDraft] = useState<{ orig: string; name: string }[]>([]);
+  const [memberDraft, setMemberDraft] = useState<{ orig: string; name: string; leftMonth?: string; joinedMonth?: string }[]>([]);
+  const [removeTarget, setRemoveTarget] = useState<{ index: number; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [delCode, setDelCode] = useState<string>('');
   const [delPass, setDelPass] = useState<string>('');
@@ -60,11 +61,18 @@ export const SettingsModal: React.FC = () => {
       setSMonth(data.config.month || currentMonth());
       setSFixedEnabled(Boolean(data.config.fixedCostEnabled));
       setSFixed(String(data.config.fixedCost || 0));
-      setMemberDraft(data.members.map(m => ({ orig: m.name, name: m.name })));
+      setMemberDraft(data.members.map(m => ({
+        orig: m.name,
+        name: m.name,
+        leftMonth: m.leftMonth,
+        joinedMonth: m.joinedMonth,
+      })));
+      setRemoveTarget(null);
     } else {
       setIsDeleting(false);
       setDelCode('');
       setDelPass('');
+      setRemoveTarget(null);
     }
   }, [isSettingsOpen, data.config, messName, data.members]);
 
@@ -82,16 +90,50 @@ export const SettingsModal: React.FC = () => {
     setMemberDraft(prev => [...prev, { orig: '', name: '' }]);
   };
 
-  const handleRemoveMember = (index: number) => {
+  const handleOpenRemoveModal = (index: number) => {
+    const item = memberDraft[index];
     if (memberDraft.length <= 1) {
       showToast(t.minOneMemberError);
       return;
     }
-    setMemberDraft(prev => prev.filter((_, i) => i !== index));
+    setRemoveTarget({ index, name: item.name });
+  };
+
+  const handleExcludeNextMonth = () => {
+    if (!removeTarget) return;
+    const targetNextMonth = getNextMonth(sMonth || data.config.month || currentMonth());
+    setMemberDraft(prev => {
+      const copy = [...prev];
+      copy[removeTarget.index] = { ...copy[removeTarget.index], leftMonth: targetNextMonth };
+      return copy;
+    });
+    const monthName = getMonthLabel(targetNextMonth);
+    showToast(t.memberLeavingScheduled(removeTarget.name, monthName));
+    setRemoveTarget(null);
+  };
+
+  const handleDeleteCompletely = () => {
+    if (!removeTarget) return;
+    setMemberDraft(prev => prev.filter((_, i) => i !== removeTarget.index));
+    setRemoveTarget(null);
+  };
+
+  const handleRestoreMember = (index: number) => {
+    const item = memberDraft[index];
+    setMemberDraft(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], leftMonth: undefined };
+      return copy;
+    });
+    showToast(t.memberRestoredActive(item.name));
   };
 
   const handleSave = () => {
-    const cleanMembers: Member[] = memberDraft.map(x => ({ name: x.name.trim() }));
+    const cleanMembers: Member[] = memberDraft.map(x => ({
+      name: x.name.trim(),
+      leftMonth: x.leftMonth,
+      joinedMonth: x.joinedMonth,
+    }));
     if (!cleanMembers.length) {
       showToast(t.minOneMemberError);
       return;
@@ -376,26 +418,65 @@ export const SettingsModal: React.FC = () => {
           </div>
 
           <div className="space-y-1.5 member-scroll-box pr-1">
-            {memberDraft.map((item, i) => (
-              <div key={i} className="member-setting-row" style={{ gridTemplateColumns: 'minmax(0, 1fr) 42px' }}>
-                <input
-                  type="text"
-                  value={item.name}
-                  maxLength={60}
-                  onChange={e => handleMemberChange(i, e.target.value)}
-                  placeholder={t.memberNamePlaceholder(i + 1)}
-                  className="field py-1.5 text-xs"
-                />
-                <button
-                  type="button"
-                  className="btn danger py-2 px-2.5"
-                  title={t.delete}
-                  onClick={() => handleRemoveMember(i)}
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
-                </button>
-              </div>
-            ))}
+            {memberDraft.map((item, i) => {
+              if (item.leftMonth) {
+                return (
+                  <div
+                    key={i}
+                    className="p-2 sm:p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 transition-all"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-extrabold text-xs text-slate-800 dark:text-slate-100 truncate line-through opacity-70">
+                        {item.name}
+                      </p>
+                      <p className="text-[10px] sm:text-[11px] text-amber-600 dark:text-amber-400 font-bold truncate mt-0.5">
+                        {t.memberLeavingBadge(getMonthLabel(item.leftMonth))}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        className="btn text-xs py-1 px-2.5 bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 cursor-pointer font-bold shadow-xs"
+                        onClick={() => handleRestoreMember(i)}
+                        title={t.keepActiveMemberBtn}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>{t.keepActiveMemberBtn}</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn danger py-1.5 px-2 text-red-500 hover:bg-red-500/20"
+                        title={t.delete}
+                        onClick={() => handleOpenRemoveModal(i)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={i} className="member-setting-row" style={{ gridTemplateColumns: 'minmax(0, 1fr) 42px' }}>
+                  <input
+                    type="text"
+                    value={item.name}
+                    maxLength={60}
+                    onChange={e => handleMemberChange(i, e.target.value)}
+                    placeholder={t.memberNamePlaceholder(i + 1)}
+                    className="field py-1.5 text-xs font-medium"
+                  />
+                  <button
+                    type="button"
+                    className="btn danger py-2 px-2.5"
+                    title={t.delete}
+                    onClick={() => handleOpenRemoveModal(i)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -548,6 +629,82 @@ export const SettingsModal: React.FC = () => {
           <span>{t.saveSettingsBtn}</span>
         </button>
       </div>
+
+      {/* Member Removal Options Dialog */}
+      {removeTarget && (
+        <div
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[70] flex items-center justify-center p-3.5 sm:p-5"
+          onClick={() => setRemoveTarget(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-[#0e1726] border border-slate-200 dark:border-slate-700/80 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95 duration-150"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+              <div>
+                <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                  {t.removeMemberModalTitle}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {t.removeMemberModalSub(removeTarget.name)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRemoveTarget(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 pt-1">
+              {/* Option 1: Exclude starting next month (Recommended) */}
+              <button
+                type="button"
+                onClick={handleExcludeNextMonth}
+                className="w-full text-left p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-500/50 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/50 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="font-extrabold text-xs sm:text-sm text-emerald-800 dark:text-emerald-300">
+                    {t.removeFromNextMonthOption(getMonthLabel(getNextMonth(sMonth || data.config.month || currentMonth())))}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white shrink-0">
+                    ★ {language === 'en' ? 'Recommended' : 'সুপারিশকৃত'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-900/80 dark:text-emerald-200/80 leading-relaxed font-normal">
+                  {t.removeFromNextMonthHelp}
+                </p>
+              </button>
+
+              {/* Option 2: Delete completely */}
+              <button
+                type="button"
+                onClick={handleDeleteCompletely}
+                className="w-full text-left p-3 rounded-2xl bg-red-50/50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 hover:bg-red-100/60 dark:hover:bg-red-900/30 transition-all cursor-pointer"
+              >
+                <p className="font-extrabold text-xs sm:text-sm text-red-700 dark:text-red-400 mb-1">
+                  {t.removeFromThisMonthOption}
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {t.removeFromThisMonthHelp}
+                </p>
+              </button>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setRemoveTarget(null)}
+                className="btn text-xs py-2 px-4 font-semibold"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

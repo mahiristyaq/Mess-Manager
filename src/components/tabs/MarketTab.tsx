@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useMess } from '../../context/MessContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { TransactionItem } from '../TransactionItem';
-import { exportTransactionsToCSV, downloadBlob } from '../../utils/helpers';
+import { exportTransactionsToCSV, downloadBlob, getActiveMembersForMonth } from '../../utils/helpers';
 import { ShoppingBag, Plus, Receipt, TrendingUp, Users, Download, ChevronDown } from 'lucide-react';
 
 const PAGE_SIZE = 20;
@@ -100,7 +100,7 @@ export const MarketTab: React.FC = () => {
               <span className="truncate">{t.membersContribution}</span>
             </p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-black text-white mt-1 num truncate">
-              {t.membersCount(formatNumber(data.members.length))}
+              {t.membersCount(formatNumber(getActiveMembersForMonth(data, activeMonth).length))}
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ export const MarketTab: React.FC = () => {
                 style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
               >
                 <option value="all">{t.allMembers}</option>
-                {data.members.map(m => (
+                {getActiveMembersForMonth(data, activeMonth).map(m => (
                   <option key={m.name} value={m.name}>
                     {m.name}
                   </option>

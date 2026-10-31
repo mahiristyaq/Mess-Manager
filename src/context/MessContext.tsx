@@ -17,6 +17,7 @@ import {
   sanitizeTransactionInput,
   isMonthEditable,
   getActiveMembersForMonth,
+  getNextMonth,
 } from '../utils/helpers';
 import {
   restGetDoc,
@@ -853,11 +854,12 @@ export const MessProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!approve) {
         return { ...prev, pendingLeaveRequests: pending };
       }
-      // Remove member from members list
-      const members = prev.members.filter(m => m.name !== memberName);
+      // Exclude member starting next month so current/past months remain intact
+      const nextM = getNextMonth(prev.config.month || currentMonth());
+      const members = prev.members.map(m => (m.name === memberName ? { ...m, leftMonth: nextM } : m));
       return {
         ...prev,
-        members: members.length ? members : prev.members,
+        members,
         pendingLeaveRequests: pending,
       };
     });

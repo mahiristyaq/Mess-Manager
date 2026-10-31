@@ -145,7 +145,7 @@ export const HomeTab: React.FC = () => {
             <span className="truncate">{t.messMembers}</span>
           </div>
           <p className="text-base sm:text-lg lg:text-xl font-extrabold text-slate-900 dark:text-white mt-2 num truncate">
-            {t.membersCount(formatNumber(data.members.length))}
+            {t.membersCount(formatNumber(getActiveMembersForMonth(data, activeMonth).length))}
           </p>
         </div>
       </div>

@@ -373,7 +373,7 @@ export const ReportTab: React.FC = () => {
                         {data.config.fixedCostEnabled && (
                           <div className="flex justify-between text-slate-600 dark:text-slate-400 text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800">
                             <span>{language === 'en' ? 'Fixed Cost Share:' : 'স্থায়ী খরচের অংশ:'}</span>
-                            <span className="font-bold num text-slate-900 dark:text-slate-100">{formatMoney((data.config.fixedCost || 0) / (data.members.length || 1))}</span>
+                            <span className="font-bold num text-slate-900 dark:text-slate-100">{formatMoney((data.config.fixedCost || 0) / (activeMembers.length || 1))}</span>
                           </div>
                         )}
                       </div>
@@ -405,7 +405,7 @@ export const ReportTab: React.FC = () => {
                   <span className="truncate">{t.overallSummary}</span>
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono shrink-0">
-                  {t.membersCount(formatNumber(data.members.length))}
+                  {t.membersCount(formatNumber(activeMembers.length))}
                 </span>
               </div>
 
@@ -441,7 +441,7 @@ export const ReportTab: React.FC = () => {
                 <span>{t.tapRowForDetails}</span>
               </span>
               <span className="text-[11px] font-mono shrink-0 font-bold">
-                {t.membersCount(formatNumber(data.members.length))}
+                {t.membersCount(formatNumber(activeMembers.length))}
               </span>
             </div>
 
@@ -560,7 +560,7 @@ export const ReportTab: React.FC = () => {
                                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
                                     <span>{language === 'en' ? 'Fixed Cost Share:' : 'স্থায়ী খরচের অংশ:'}</span>
                                     <span className="font-bold num text-slate-900 dark:text-slate-100">
-                                      {formatMoney((data.config.fixedCost || 0) / (data.members.length || 1))}
+                                      {formatMoney((data.config.fixedCost || 0) / (activeMembers.length || 1))}
                                     </span>
                                   </div>
                                 )}
