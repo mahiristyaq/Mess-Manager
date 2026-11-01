@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\+=%]+$');
+    }
+
+    function isValidMessData(data) {
+      return data.version is number &&
+             data.config is map &&
+             data.members is list &&
+             data.members.size() <= 100 &&
+             (!('transactions' in data) || (data.transactions is list && data.transactions.size() <= 3000));
+    }
+
+    // Main Mess Storage
+    match /messes_v3/{messKey}/data/main {
+      allow get, list: if isValidId(messKey);
+      allow create, update: if isValidId(messKey) && isValidMessData(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Legacy Mess Storage support
+    match /messes_v2/{messKey}/data/main {
+      allow get, list: if isValidId(messKey);
+      allow create, update: if isValidId(messKey) && isValidMessData(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /messes/{messKey}/data/main {
+      allow get, list: if isValidId(messKey);
+      allow create, update: if isValidId(messKey) && isValidMessData(request.resource.data);
+      allow delete: if false;
+    }
+  }
+}
