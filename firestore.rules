@@ -1,0 +1,98 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Validate document/mess key format
+    function isValidId(id) {
+      return id is string &&
+             id.size() > 0 &&
+             id.size() <= 128 &&
+             id.matches('^[a-zA-Z0-9_\\-\\+=%]+$');
+    }
+
+    // Validate Mess Config structure & bounds
+    function isValidMessConfig(cfg) {
+      return cfg is map &&
+             (!('messName' in cfg) || (cfg.messName is string && cfg.messName.size() <= 120)) &&
+             (!('month' in cfg) || (cfg.month is string && cfg.month.matches('^\\d{4}-\\d{2}$'))) &&
+             (!('fixedCost' in cfg) || (cfg.fixedCost is number && cfg.fixedCost >= 0 && cfg.fixedCost <= 10000000)) &&
+             (!('fixedCostEnabled' in cfg) || cfg.fixedCostEnabled is bool) &&
+             (!('adminPasswordHash' in cfg) || (cfg.adminPasswordHash is string && cfg.adminPasswordHash.size() <= 128));
+    }
+
+    // Validate Main Mess Data schema, whitelisted keys & size bounds
+    function isValidMessData(data) {
+      let allowedKeys = [
+        'version',
+        'revision',
+        'syncId',
+        'config',
+        'members',
+        'meals',
+        'transactions',
+        'updatedAt',
+        'updatedBy',
+        'pendingLeaveRequests'
+      ];
+      return data.keys().hasOnly(allowedKeys) &&
+             data.version is number &&
+             data.version >= 1 &&
+             data.version <= 100 &&
+             isValidMessConfig(data.config) &&
+             data.members is list &&
+             data.members.size() >= 1 &&
+             data.members.size() <= 100 &&
+             (!('meals' in data) || (data.meals is map && data.meals.size() <= 1500)) &&
+             (!('transactions' in data) || (data.transactions is list && data.transactions.size() <= 3000)) &&
+             (!('pendingLeaveRequests' in data) || (data.pendingLeaveRequests is list && data.pendingLeaveRequests.size() <= 100));
+    }
+
+    // Validate Monthly Summary document schema
+    function isValidSummaryData(data) {
+      return data is map &&
+             data.size() <= 20 &&
+             (!('month' in data) || (data.month is string && data.month.size() <= 20)) &&
+             (!('totalExpenses' in data) || data.totalExpenses is number) &&
+             (!('totalDeposits' in data) || data.totalDeposits is number) &&
+             (!('totalMeals' in data) || data.totalMeals is number) &&
+             (!('mealRate' in data) || data.mealRate is number);
+    }
+
+    // Main Mess Storage (Single-Mess Lookup ONLY: allow get, deny list enumeration)
+    match /messes_v3/{messKey}/data/main {
+      allow get: if isValidId(messKey);
+      allow list: if false;
+      allow create, update: if isValidId(messKey) && isValidMessData(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Denormalized Monthly Summaries
+    match /messes_v3/{messKey}/summaries/{summaryId} {
+      allow get: if isValidId(messKey) && isValidId(summaryId);
+      allow list: if false;
+      allow create, update: if isValidId(messKey) && isValidId(summaryId) && isValidSummaryData(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Legacy Mess Storage support (get only, no enumeration)
+    match /messes_v2/{messKey}/data/main {
+      allow get: if isValidId(messKey);
+      allow list: if false;
+      allow create, update: if isValidId(messKey) && isValidMessData(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /messes/{messKey}/data/main {
+      allow get: if isValidId(messKey);
+      allow list: if false;
+      allow create, update: if isValidId(messKey) && isValidMessData(request.resource.data);
+      allow delete: if false;
+    }
+  }
+}
