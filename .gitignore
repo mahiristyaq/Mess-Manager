@@ -1,0 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies & Build Output
+node_modules
+dist
+dist-ssr
+dev-dist
+*.local
+bun.lock
+*.lock
+
+# Environment & Sensitive Config Files (Never push to public GitHub)
+.env
+.env.*
+firebase-blueprint.json
+security_spec.md
+metadata.json
+.aistudio
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
